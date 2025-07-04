@@ -1,1 +1,1 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Shiayein/ImmortalFarm/main/loader.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Shiayein/ImmortalFarm/main/verification.lua"))()
