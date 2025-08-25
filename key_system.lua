@@ -20,8 +20,9 @@ KeyStore.WHITELIST_USER_IDS = {
 KeyStore.KEYS = {
   ["IMMORTAL-TEAM"]    = { users = {123456, 654321} },
   ["IMMORTAL-SOLO"]    = { users = {5604790652} },
-  ["IMMORTAL-UNBOUND"] = { users = {} }
+  ["JTXG-BHAF-4U5O-DDZV"] = { users = {} }
 }
 
 return KeyStore
+
 
