@@ -61,6 +61,10 @@ local route = {
 	CFrame.new(-941.35, 21.75, -165.24),
 	CFrame.new(-870.75, 21.80, -87.96),
 	CFrame.new(-861.74, 21.80, -87.96),
+	CFrame.new(-611.79, 21.88 , 269.62),
+	CFrame.new(-556.95, 21.88, 269.85),
+	CFrame.new(-480.65, 21.86, -77.11),
+	CFrame.new(-3.55, 21.76, -103.97),
 }
 
 -- Base helpers (same logic, no '+=')
