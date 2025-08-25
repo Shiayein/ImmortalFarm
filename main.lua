@@ -59,7 +59,7 @@ do
     local env = (getfenv and getfenv()) or _G
     local key = rawget(env, "script_key") or (getgenv and getgenv().script_key) or read_saved_key()
     if not key or #tostring(key) == 0 then
-        LocalPlayer:Kick("[ImmortalFarm] Missing key. Use:  script_key = \"YOUR-KEY\"  then run again.")
+        LocalPlayer:Kick("Missing key or get a key in discord.gg/qzE7xvkzAZ.")
         return
     end
     key = strim(key)
