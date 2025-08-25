@@ -1,32 +1,46 @@
 -- ui_mobile_example.lua
--- Example using the refined square, checkbox-style mobile GUI.
+-- ImmortalFarm - UI only (mobile-friendly square GUI)
+-- Controls the logic in main.lua via getgenv().IF
+
+local IF = getgenv().IF or {}
+getgenv().IF = IF
 
 local LIB_URL = "https://raw.githubusercontent.com/Shiayein/ImmortalFarm/main/source_gui_mobile.lua"
-
 local library = loadstring(game:HttpGet(LIB_URL))()
 library:init()
 
-local Window = library.NewWindow({
-    title = "ImmortalFarm",
-    subtitle = "Da Hood",
-})
-
+local Window = library.NewWindow({ title = "ImmortalFarm", subtitle = "Da Hood" })
 local Tab = Window:AddTab("main")
 local Section = Tab:AddSection("Farm Controls", 1)
 
+-- Indicator and value
+local gainsIndicator = library.NewIndicator({
+    title = "Immortal",
+    enabled = true,
+    position = UDim2.new(0, 12, 0, 240),
+    clickToOpen = true, -- tap to reopen the GUI (no duplicates)
+})
+local gainsValue = gainsIndicator:AddValue({ key = "Gains", value = "0" })
+
+-- Allow logic to update the UI gains
+IF.SetGains = function(text)
+    gainsValue:SetValue(tostring(text or "0"))
+end
+
+-- UI -> Logic
 Section:AddToggle({
     text = "Immortal Farm",
     state = false,
-    callback = function(state)
-        -- if state then StartFarm() else StopFarm() end
+    callback = function(on)
+        if IF.StartFarm then IF.StartFarm(on) end
     end
 })
 
 Section:AddToggle({
     text = "Hack POV",
     state = false,
-    callback = function(state)
-        -- SetPOV(state)
+    callback = function(on)
+        if IF.SetPOV then IF.SetPOV(on) end
     end
 })
 
@@ -38,12 +52,3 @@ Section:AddKeybind({
         library:SendNotification("UI key set to: ".. key.Name, 2)
     end
 })
-
-local gainsIndicator = library.NewIndicator({
-    title = "Immortal",
-    enabled = true,
-    position = UDim2.new(0, 12, 0, 240),
-    clickToOpen = true, -- tapping this will reopen the GUI without duplicates
-})
-local gainsValue = gainsIndicator:AddValue({ key = "Gains", value = "0" })
--- gainsValue:SetValue("1234")
