@@ -1,19 +1,21 @@
 -- main.lua
--- ImmortalFarm - Logic only (NO UI inside this file)
--- Exposes an API via getgenv().IF that a separate UI script can control.
+-- ImmortalFarm — Logic only (NO UI here)
+-- Keeps your original logic, removes legacy GUI, adds a tiny bridge for the external UI,
+-- and auto-loads ui_mobile_example.lua (which itself uses source_gui_mobile.lua).
 
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
+local backpack = player:WaitForChild("Backpack")
 local character = player.Character or player.CharacterAdded:Wait()
 local rootPart = character:WaitForChild("HumanoidRootPart")
-local backpack = player:WaitForChild("Backpack")
 
--- Shared API table for UI <-> Logic
+-- Shared bridge (UI <-> Logic)
 local IF = getgenv().IF or {}
 getgenv().IF = IF
+IF.SetGains = IF.SetGains or function() end -- will be set by the UI
 
 -- State
 local toolName = "Combat"
@@ -24,9 +26,9 @@ local isFarmingDHC = false
 local currentRouteIndex = 0
 local startCash = 0
 
--- Optional: remove seats/vehicle seats (same behavior as before)
+-- Optional cleanup (same behavior as your file)
 local function DeleteSeats()
-	for _, seat in pairs(workspace:GetDescendants()) do
+	for _, seat in ipairs(workspace:GetDescendants()) do
 		if seat:IsA("Seat") or seat:IsA("VehicleSeat") then
 			seat:Destroy()
 		end
@@ -34,7 +36,7 @@ local function DeleteSeats()
 end
 pcall(DeleteSeats)
 
--- Route (same list you used)
+-- === Route (kept the same) ===
 local route = {
 	CFrame.new(583.81, 49.00, -276.92),
 	CFrame.new(517.03, 48.00, -302.60),
@@ -61,7 +63,7 @@ local route = {
 	CFrame.new(-861.74, 21.80, -87.96),
 }
 
--- Helpers
+-- Base helpers (same logic, no '+=')
 local function getNextRoutePosition()
 	currentRouteIndex = currentRouteIndex + 1
 	if currentRouteIndex > #route then
@@ -128,7 +130,7 @@ local function findClosestATM()
 	return closest
 end
 
--- Periodic look toward the nearest ATM when waiting
+-- Look toward ATM once per second while waiting
 local LOOK_INTERVAL, timeSinceLastLook = 1.0, 0
 RunService.Heartbeat:Connect(function(dt)
 	timeSinceLastLook = timeSinceLastLook + dt
@@ -150,68 +152,70 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 end)
 
--- Blur effect for POV
+-- Blur for POV
+local Lighting = game:GetService("Lighting")
 local blur = Instance.new("BlurEffect")
 blur.Size = 20
 blur.Enabled = false
-blur.Parent = game:GetService("Lighting")
+blur.Parent = Lighting
 
--- ========== Public API (used by the separate UI) ==========
-function IF.StartFarm(on)
-	autofarmOn = on and true or false
-	aimingATM = autofarmOn
+-- ========= Public API (called by the UI) =========
+if not IF.StartFarm then
+	function IF.StartFarm(on)
+		autofarmOn = on and true or false
+		aimingATM = autofarmOn
 
-	-- Init gains on start
-	local dataFolder = player:FindFirstChild("DataFolder")
-	if autofarmOn and dataFolder then
-		for _, v in pairs(dataFolder:GetChildren()) do
-			if v:IsA("ValueBase") and v.Name:lower():find("curr") then
-				startCash = v.Value
-				if IF.SetGains then IF.SetGains("0") end
-				break
+		-- Init gains on start
+		local dataFolder = player:FindFirstChild("DataFolder")
+		if autofarmOn and dataFolder then
+			for _, v in ipairs(dataFolder:GetChildren()) do
+				if v:IsA("ValueBase") and v.Name:lower():find("curr") then
+					startCash = v.Value
+					pcall(function() IF.SetGains("0") end)
+					break
+				end
 			end
 		end
-	end
 
-	-- If stopped, ensure POV is off
-	if not autofarmOn and IF.SetPOV then
-		IF.SetPOV(false)
-	end
-end
-
-function IF.SetPOV(on)
-	if on and not autofarmOn then
-		-- Don't allow POV when farm is off
-		return
-	end
-	hackPOVOn = on and true or false
-	blur.Enabled = hackPOVOn
-
-	local cam = workspace.CurrentCamera
-	if hackPOVOn then
-		cam.CameraType = Enum.CameraType.Scriptable
-		cam.CFrame = CFrame.new(100, 60, -500) * CFrame.Angles(0, math.rad(45), 0)
-	else
-		cam.CameraType = Enum.CameraType.Custom
-		cam.CameraSubject = character:FindFirstChildOfClass("Humanoid")
+		-- Stop POV when stopping farm
+		if (not autofarmOn) and IF.SetPOV then
+			IF.SetPOV(false)
+		end
 	end
 end
 
--- Gains watcher: update UI if callback is set
+if not IF.SetPOV then
+	function IF.SetPOV(on)
+		if on and not autofarmOn then return end -- don't enable POV if farm is off
+		hackPOVOn = on and true or false
+		blur.Enabled = hackPOVOn
+
+		local cam = workspace.CurrentCamera
+		if hackPOVOn then
+			cam.CameraType = Enum.CameraType.Scriptable
+			cam.CFrame = CFrame.new(100, 60, -500) * CFrame.Angles(0, math.rad(45), 0)
+		else
+			cam.CameraType = Enum.CameraType.Custom
+			cam.CameraSubject = character:FindFirstChildOfClass("Humanoid")
+		end
+	end
+end
+
+-- Gains watcher -> notify UI
 task.spawn(function()
 	local dataFolder = player:WaitForChild("DataFolder", 5)
 	if not dataFolder then return end
-	for _, v in pairs(dataFolder:GetChildren()) do
+	for _, v in ipairs(dataFolder:GetChildren()) do
 		if v:IsA("ValueBase") and v.Name:lower():find("curr") then
 			v.Changed:Connect(function()
 				local gain = v.Value - (startCash or 0)
-				if IF.SetGains then IF.SetGains(tostring(gain)) end
+				pcall(function() IF.SetGains(tostring(gain)) end)
 			end)
 		end
 	end
 end)
 
--- Main farm loop
+-- ========= Main farm loop (unchanged) =========
 task.spawn(function()
 	while true do
 		if autofarmOn then
@@ -243,5 +247,8 @@ task.spawn(function()
 	end
 end)
 
--- NOTE: This file intentionally contains NO UI.
--- Load your UI separately from ui_mobile_example.lua
+-- ========= Auto-load the external UI (kept separate) =========
+pcall(function()
+	-- UI uses source_gui_mobile.lua internally; both stay separate, just linked.
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/Shiayein/ImmortalFarm/main/ui_mobile_example.lua"))()
+end)
