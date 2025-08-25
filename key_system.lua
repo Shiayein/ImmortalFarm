@@ -1,14 +1,9 @@
-------------------------------------------------------------------
--- key_system.lua
---  Ajouter / gérer les clés ici.
---    nil  = clé encore libre
---    number = UserId du joueur à qui la clé est liée
-------------------------------------------------------------------
+DEV_KEYS = { "IMMORTAL-DEV-2025" }, -- marche pour tous les comptes
 
-local Keys = {
-    ["IMMORTAL2025"] = 7849930474,   -- déjà réservée
-    ["SECRETKEY001"] = nil,          -- libres :
-    ["VIPACCESS99"]  = nil,
+WHITELIST_USER_IDS = { 7849930474 }, -- joueurs qui n’ont pas besoin de clé
+
+KEYS = {
+  ["IMMORTAL-TEAM"]   = { users = { 123456, 654321 } }, -- liée à plusieurs comptes
+  ["IMMORTAL-SOLO"]   = { users = { 1111111111 } },     -- liée à 1 compte
+  ["IMMORTAL-UNBOUND"] = { users = {} },                -- universelle
 }
-
-return Keys
