@@ -1,3 +1,82 @@
+-- === ImmortalFarm Key Check (top-of-file) ===
+do
+    local REPO = "https://raw.githubusercontent.com/Shiayein/ImmortalFarm/main/"
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local userId = LocalPlayer.UserId
+
+    -- Optional local save (executor dependent)
+    local FOLDER = "ImmortalFarm"
+    local KEYFILE = FOLDER .. "/key.txt"
+    local function safe_mkdir()
+        if isfolder and not isfolder(FOLDER) then
+            pcall(makefolder, FOLDER)
+        end
+    end
+    local function read_saved_key()
+        if isfile and isfile(KEYFILE) then
+            local ok, data = pcall(readfile, KEYFILE)
+            if ok and data and #data > 0 then return data end
+        end
+    end
+    local function save_key(key)
+        if writefile then
+            safe_mkdir()
+            pcall(writefile, KEYFILE, tostring(key))
+        end
+    end
+
+    -- Load key store
+    local okStore, KeyStore = pcall(function()
+        return loadstring(game:HttpGet(REPO .. "key_system.lua"))()
+    end)
+    if not okStore or type(KeyStore) ~= "table" then
+        LocalPlayer:Kick("[ImmortalFarm] Failed to load key store.")
+        return
+    end
+
+    -- Resolve provided key
+    local env = getfenv() or _G
+    local key = rawget(env, "script_key") or getgenv().script_key or read_saved_key()
+    if not key or #tostring(key) == 0 then
+        LocalPlayer:Kick("[ImmortalFarm] Missing key. Use:  script_key = \"YOUR-KEY\"  then run the loader again.")
+        return
+    end
+    key = tostring(key)
+
+    local function contains(tbl, v)
+        for _, x in ipairs(tbl or {}) do if x == v then return true end end
+        return false
+    end
+    local function isDevKey(k)
+        for _, v in ipairs(KeyStore.DEV_KEYS or {}) do if v == k then return true end end
+        return false
+    end
+    local function isWhitelistedUser(uid)
+        return contains(KeyStore.WHITELIST_USER_IDS, uid)
+    end
+    local function validate(k, uid)
+        if isDevKey(k) then return true, "Developer key accepted." end
+        if isWhitelistedUser(uid) then return true, "User whitelisted." end
+        local entry = (KeyStore.KEYS or {})[k]
+        if not entry then return false, "Invalid key." end
+        local users = entry.users or {}
+        if #users == 0 then return true, "Universal key accepted." end
+        if contains(users, uid) then return true, "Bound key accepted." end
+        return false, "Key not bound to this account."
+    end
+
+    local ok, reason = validate(key, userId)
+    if not ok then
+        LocalPlayer:Kick("[ImmortalFarm] Access denied: " .. tostring(reason) .. "  Join Discord: https://discord.gg/qzE7xvkzAZ")
+        return
+    end
+
+    -- Persist key and mark verified
+    save_key(key)
+    _G.IMMORTAL_VERIFIED = true
+end
+-- === End Key Check ===
 -- main.lua
 -- ImmortalFarm — Logic only (NO UI here)
 -- Keeps your original logic, removes legacy GUI, adds a tiny bridge for the external UI,
