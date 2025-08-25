@@ -28,7 +28,7 @@ do
 
     -- Load key store
     local okStore, KeyStore = pcall(function()
-        return loadstring(game:HttpGet(REPO .. "key_system.lua"))()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/Shiayein/ImmortalFarm/main/key_system.lua", true))()
     end)
     if not okStore or type(KeyStore) ~= "table" then
         LocalPlayer:Kick("[ImmortalFarm] Failed to load key store.")
