@@ -1,9 +1,26 @@
-DEV_KEYS = { "IMMORTAL-DEV-2025" }, -- marche pour tous les comptes
+-- ImmortalFarm - Key store (ASCII only)
+-- Declare developer keys, whitelist user IDs, and per-key bindings.
+-- IMPORTANT: Keep ASCII only (no fancy dashes/quotes).
 
-WHITELIST_USER_IDS = { 7849930474 }, -- joueurs qui n’ont pas besoin de clé
+local KeyStore = {}
 
-KEYS = {
-  ["IMMORTAL-TEAM"]   = { users = { 123456, 654321 } }, -- liée à plusieurs comptes
-  ["IMMORTAL-SOLO"]   = { users = { 1111111111 } },     -- liée à 1 compte
-  ["IMMORTAL-UNBOUND"] = { users = {} },                -- universelle
+-- Developer keys: work for ANY account
+KeyStore.DEV_KEYS = {
+  "IMMORTAL-DEV-2025"
 }
+
+-- Optional: user IDs allowed to run without a key
+KeyStore.WHITELIST_USER_IDS = {
+  -- 7849930474
+}
+
+-- Normal keys
+--   ["KEY"] = { users = {123, 456} }  -- bound to specific accounts
+--   ["KEY"] = { users = {} }          -- universal (not bound)
+KeyStore.KEYS = {
+  ["IMMORTAL-TEAM"]    = { users = {123456, 654321} },
+  ["IMMORTAL-SOLO"]    = { users = {1111111111} },
+  ["IMMORTAL-UNBOUND"] = { users = {} }
+}
+
+return KeyStore
