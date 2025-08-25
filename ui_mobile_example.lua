@@ -1,5 +1,5 @@
 -- ui_mobile_example.lua
--- Example using the square, checkbox-style mobile GUI.
+-- Example using the refined square, checkbox-style mobile GUI.
 
 local LIB_URL = "https://raw.githubusercontent.com/Shiayein/ImmortalFarm/main/source_gui_mobile.lua"
 
@@ -43,6 +43,7 @@ local gainsIndicator = library.NewIndicator({
     title = "Immortal",
     enabled = true,
     position = UDim2.new(0, 12, 0, 240),
+    clickToOpen = true, -- tapping this will reopen the GUI without duplicates
 })
 local gainsValue = gainsIndicator:AddValue({ key = "Gains", value = "0" })
 -- gainsValue:SetValue("1234")
