@@ -15,14 +15,22 @@ Huge credit to **byte.warp** for their incredible help during development — th
 :shield: **Current Status**  
 - Works perfectly in a **private server** for now  
 - Extremely fast and smooth performance  
-- Coming soon for **public servers**
+- Coming soon for **public servers**  
+- **Compatible with Mobile and PC**  
+- **Supports all executors**  
 
-## :framed_picture: Screenshot Preview
+## :framed_picture: Dynamic Counter Feature
 
-Here is a preview of the UI in action:
+One of the highlights of this update is the **dynamic counter**, shown below:  
+It tracks your progress in real time and is **fully interactive**:  
+
+- On **PC**, you can **toggle the menu** using a key of your choice.  
+- You can **close the menu** safely using the cross in the top-left corner.  
+- Pressing on the **counter opens the menu instantly**.  
+- On **Mobile**, the UI automatically **adapts perfectly** for touch interactions.  
 
 <p align="center">
-  <img src="screen2.png" alt="Screen 2" width="400">
+  <img src="screen2.png" alt="Dynamic Counter" width="400">
 </p>
 
 :repeat: **Updates**  
@@ -32,8 +40,10 @@ This script will be updated **regularly** with new features and improvements!
 For support, updates, and discussions, join the official server:  
 :point_right: [discord.gg/qzE7xvkzAZ](https://discord.gg/qzE7xvkzAZ)
 
-## :framed_picture: Final Screenshot
+## :framed_picture: UI Preview
+
+Here is the full UI preview:
 
 <p align="center">
-  <img src="screen1.png" alt="Screen 1" width="400">
+  <img src="screen1.png" alt="UI Preview" width="400">
 </p>
