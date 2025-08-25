@@ -1,17 +1,8 @@
 -- source_gui_mobile.lua
--- Standalone, mobile-friendly GUI library inspired by "Tokyo Lib Source.lua", with no external dependencies.
--- Focus: simple window, sections, toggles, indicator, notifications. Touch-first sizing.
--- Usage:
---   local library = loadstring(readfile("source_gui_mobile.lua"))() -- or loadstring(game:HttpGet("<raw-url>"))()
---   library:init()
---   local win = library.NewWindow({ title = "ImmortalFarm", size = UDim2.new(0, 420, 0, 280), position = UDim2.new(0, 80, 0, 120) })
---   local tab = win:AddTab("Main")
---   local sec = tab:AddSection("Farm Controls", 1)
---   sec:AddToggle({ text = "Immortal Farm", state = false, callback = function(on) print("Farm:", on) end })
---   sec:AddToggle({ text = "Hack POV", state = false, callback = function(on) print("POV:", on) end })
---   local ind = library.NewIndicator({ title = "Immortal", enabled = true, position = UDim2.new(0, 12, 0, 240) })
---   local gains = ind:AddValue({ key = "Gains", value = "0" })
---   gains:SetValue("123")
+-- Standalone, mobile-friendly GUI library (no external deps).
+-- API: library:init(), library.NewWindow({title,size,position}), window:AddTab(name), tab:AddSection(title, col),
+--      section:AddToggle({text,state,callback}), library.NewIndicator({title,enabled,position}), indicator:AddValue({key,value})
+-- Color theme uses blue accent (#0000FF).
 
 local startupArgs = ({...})[1] or {}
 
@@ -21,9 +12,7 @@ end
 
 local function GS(s) return game:GetService(s) end
 local TweenService = GS("TweenService")
-local Players = GS("Players")
 local UserInputService = GS("UserInputService")
-local RunService = GS("RunService")
 
 local function tween(o, props, t, style, dir)
     local info = TweenInfo.new(t or 0.18, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out)
@@ -49,7 +38,6 @@ local SUBTXT = Color3.fromRGB(170,170,180)
 
 local library = {
     windows = {},
-    options = {},
     indicators = {},
     connections = {},
     theme = {
@@ -92,8 +80,10 @@ function library:init()
     sg.Parent = game:GetService("CoreGui")
     self._gui = sg
 
-    -- Open/Close button (always accessible on mobile)
-    local btnSize = isTouch() and UDim2.new(0, 54, 0, 54) or UDim2.new(0, 40, 0, 40)
+    -- Open/Close button (draggable)
+    local btnW = isTouch() and 54 or 40
+    local btnH = isTouch() and 54 or 40
+    local btnSize = UDim2.new(0, btnW, 0, btnH)
     local openBtn = new("TextButton", {
         Name = "OpenClose",
         Parent = sg,
@@ -106,14 +96,14 @@ function library:init()
         TextSize = isTouch() and 16 or 14,
         AutoButtonColor = false,
     })
-    local openStroke = new("UIStroke", { Parent = openBtn, Color = STROKE, Thickness = 1 })
+    new("UIStroke", { Parent = openBtn, Color = STROKE, Thickness = 1 })
     new("UICorner", { Parent = openBtn, CornerRadius = UDim.new(0, 10) })
 
     openBtn.MouseButton1Click:Connect(function()
         self:SetOpen(not self.open)
     end)
 
-    -- Draggable for the open button
+    -- Drag logic
     local dragging, dragStart, startPos
     openBtn.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
@@ -251,10 +241,11 @@ function library.NewWindow(data)
     new("UIStroke", { Parent = root, Color = STROKE, Thickness = 1 })
 
     -- Title bar
-    local top = new("Frame", { Parent = root, BackgroundColor3 = BG2, Size = UDim2.new(1, 0, 0, isTouch() and 44 or 36) })
+    local topH = isTouch() and 44 or 36
+    local top = new("Frame", { Parent = root, BackgroundColor3 = BG2, Size = UDim2.new(1, 0, 0, topH) })
     new("UICorner", { Parent = top, CornerRadius = UDim.new(0, 10) })
-    local accent = new("Frame", { Parent = top, BackgroundColor3 = ACCENT, Size = UDim2.new(1, 0, 0, 2), Position = UDim2.new(0, 0, 1, -2) })
-    local title = new("TextLabel", {
+    new("Frame", { Parent = top, BackgroundColor3 = ACCENT, Size = UDim2.new(1, 0, 0, 2), Position = UDim2.new(0, 0, 1, -2) })
+    new("TextLabel", {
         Parent = top, BackgroundTransparency = 1, Text = tostring(data.title or ""),
         Font = Enum.Font.GothamBold, TextSize = isTouch() and 16 or 14, TextColor3 = TEXT,
         Size = UDim2.new(1, -80, 1, 0), Position = UDim2.new(0, 12, 0, 0), TextXAlignment = Enum.TextXAlignment.Left
@@ -288,8 +279,8 @@ function library.NewWindow(data)
 
     -- Body scroll
     local body = new("ScrollingFrame", {
-        Parent = root, BackgroundTransparency = 1, Size = UDim2.new(1, -16, 1, -(top.Size.Y.Offset + 16)),
-        Position = UDim2.new(0, 8, 0, top.Size.Y.Offset + 8), CanvasSize = UDim2.new(0, 0, 0, 0), ScrollBarImageTransparency = 0.5
+        Parent = root, BackgroundTransparency = 1, Size = UDim2.new(1, -16, 1, -(topH + 16)),
+        Position = UDim2.new(0, 8, 0, topH + 8), CanvasSize = UDim2.new(0, 0, 0, 0), ScrollBarImageTransparency = 0.5
     })
     local bodyLayout = new("UIListLayout", { Parent = body, FillDirection = Enum.FillDirection.Vertical, Padding = UDim.new(0, 8) })
     bodyLayout.Changed:Connect(function()
@@ -304,7 +295,7 @@ function library.NewWindow(data)
     function window:AddTab(label)
         local tab = { sections = {} }
         -- header label
-        local header = new("TextLabel", {
+        new("TextLabel", {
             Parent = body, BackgroundTransparency = 1, Text = tostring(label or "Main"),
             TextColor3 = TEXT, Font = Enum.Font.GothamBold, TextSize = isTouch() and 15 or 14, Size = UDim2.new(1, 0, 0, 18), TextXAlignment = Enum.TextXAlignment.Left
         })
@@ -313,34 +304,42 @@ function library.NewWindow(data)
             local card = new("Frame", { Parent = body, BackgroundColor3 = BG2, Size = UDim2.new(1, 0, 0, 64) })
             new("UICorner", { Parent = card, CornerRadius = UDim.new(0, 8) })
             new("UIStroke", { Parent = card, Color = STROKE, Thickness = 1 })
-            local title = new("TextLabel", { Parent = card, BackgroundTransparency = 1, Text = tostring(name or "Section"),
+            new("TextLabel", { Parent = card, BackgroundTransparency = 1, Text = tostring(name or "Section"),
                 TextColor3 = SUBTXT, Font = Enum.Font.GothamSemibold, TextSize = isTouch() and 14 or 13, Size = UDim2.new(1, -12, 0, 18), Position = UDim2.new(0, 12, 0, 8),
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             local list = new("Frame", { Parent = card, BackgroundTransparency = 1, Size = UDim2.new(1, -12, 1, -30), Position = UDim2.new(0, 12, 0, 30) })
             local ll = new("UIListLayout", { Parent = list, FillDirection = Enum.FillDirection.Vertical, Padding = UDim.new(0, 8) })
-            card.Size = UDim2.new(1, 0, 0, 30 + ll.AbsoluteContentSize.Y + 12)
-            ll.Changed:Connect(function()
+
+            local function resize()
                 card.Size = UDim2.new(1, 0, 0, 30 + ll.AbsoluteContentSize.Y + 12)
-            end)
+            end
+            resize()
+            ll.Changed:Connect(resize)
 
             function sec:AddToggle(opt)
                 opt = opt or {}
-                local row = new("Frame", { Parent = list, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, isTouch() and 36 or 28) })
-                local lbl = new("TextLabel", {
+                local rowH = isTouch() and 36 or 28
+                local row = new("Frame", { Parent = list, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, rowH) })
+                new("TextLabel", {
                     Parent = row, BackgroundTransparency = 1, Text = tostring(opt.text or "Toggle"),
                     TextColor3 = TEXT, Font = Enum.Font.GothamSemibold, TextSize = isTouch() and 15 or 13,
                     Size = UDim2.new(1, -80, 1, 0), TextXAlignment = Enum.TextXAlignment.Left
                 })
+
+                local toggleW = isTouch() and 68 or 58
+                local toggleH = isTouch() and 28 or 22
                 local btn = new("TextButton", {
-                    Parent = row, BackgroundColor3 = Color3.fromRGB(40,40,48), Size = UDim2.new(0, isTouch() ? 68 : 58, 0, isTouch() and 28 or 22),
-                    Position = UDim2.new(1, -(isTouch() and 72 or 62), 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+                    Parent = row, BackgroundColor3 = Color3.fromRGB(40,40,48), Size = UDim2.new(0, toggleW, 0, toggleH),
+                    Position = UDim2.new(1, -(toggleW + 4), 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
                     Text = "", AutoButtonColor = false
                 })
                 new("UICorner", { Parent = btn, CornerRadius = UDim.new(0, isTouch() and 14 or 12) })
                 new("UIStroke", { Parent = btn, Color = STROKE, Thickness = 1 })
+
+                local knobSize = isTouch() and 24 or 20
                 local knob = new("Frame", {
-                    Parent = btn, BackgroundColor3 = Color3.fromRGB(180,180,190), Size = UDim2.new(0, isTouch() and 24 or 20, 0, isTouch() and 24 or 20),
+                    Parent = btn, BackgroundColor3 = Color3.fromRGB(180,180,190), Size = UDim2.new(0, knobSize, 0, knobSize),
                     Position = UDim2.new(0, 2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5)
                 })
                 new("UICorner", { Parent = knob, CornerRadius = UDim.new(1, 0) })
@@ -349,7 +348,7 @@ function library.NewWindow(data)
                 local function apply()
                     if state then
                         tween(btn, { BackgroundColor3 = ACCENT }, 0.12):Play()
-                        tween(knob, { Position = UDim2.new(1, -(knob.Size.X.Offset + 2), 0.5, 0), BackgroundColor3 = Color3.fromRGB(255,255,255) }, 0.12):Play()
+                        tween(knob, { Position = UDim2.new(1, -(knobSize + 2), 0.5, 0), BackgroundColor3 = Color3.fromRGB(255,255,255) }, 0.12):Play()
                     else
                         tween(btn, { BackgroundColor3 = Color3.fromRGB(40,40,48) }, 0.12):Play()
                         tween(knob, { Position = UDim2.new(0, 2, 0.5, 0), BackgroundColor3 = Color3.fromRGB(180,180,190) }, 0.12):Play()
