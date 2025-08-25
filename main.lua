@@ -90,7 +90,7 @@ do
 
     local ok, reason = validate(key, userId)
     if not ok then
-        LocalPlayer:Kick("[ImmortalFarm] Access denied: " .. tostring(reason) .. "  | Discord: https://discord.gg/qzE7xvkzAZ")
+        LocalPlayer:Kick("Access denied: " .. tostring(reason) .. "  | Discord: discord.gg/qzE7xvkzAZ")
         return
     end
 
