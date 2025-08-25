@@ -3,72 +3,94 @@ do
     local REPO = "https://raw.githubusercontent.com/Shiayein/ImmortalFarm/main/"
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
-    local userId = LocalPlayer.UserId
+    local userId = LocalPlayer and LocalPlayer.UserId or 0
 
     -- Optional local save (executor dependent)
+    local hasFS = (typeof(isfile) == "function") and (typeof(writefile) == "function")
+                  and (typeof(isfolder) == "function") and (typeof(makefolder) == "function")
     local FOLDER = "ImmortalFarm"
     local KEYFILE = FOLDER .. "/key.txt"
+
     local function safe_mkdir()
-        if isfolder and not isfolder(FOLDER) then
+        if hasFS and not isfolder(FOLDER) then
             pcall(makefolder, FOLDER)
         end
     end
+
     local function read_saved_key()
-        if isfile and isfile(KEYFILE) then
+        if hasFS and isfile(KEYFILE) then
             local ok, data = pcall(readfile, KEYFILE)
-            if ok and data and #data > 0 then return data end
+            if ok and typeof(data) == "string" and #data > 0 then
+                return data
+            end
         end
     end
-    local function save_key(key)
-        if writefile then
+
+    local function save_key(k)
+        if hasFS then
             safe_mkdir()
-            pcall(writefile, KEYFILE, tostring(key))
+            pcall(writefile, KEYFILE, tostring(k))
         end
     end
 
-    -- Load key store
-    local okStore, KeyStore = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/Shiayein/ImmortalFarm/main/key_system.lua", true))()
-    end)
-    if not okStore or type(KeyStore) ~= "table" then
-        LocalPlayer:Kick("[ImmortalFarm] Failed to load key store.")
+    local function strim(s)
+        s = tostring(s or "")
+        return s:match("^%s*(.-)%s*$")
+    end
+
+    -- Load key store (robust)
+    local src, httpErr = game:HttpGet(REPO .. "key_system.lua")
+    if not src or #src == 0 then
+        LocalPlayer:Kick("[ImmortalFarm] Could not download key store: " .. tostring(httpErr))
+        return
+    end
+    local chunk, compileErr = loadstring(src)
+    if not chunk then
+        LocalPlayer:Kick("[ImmortalFarm] key_system.lua compile error: " .. tostring(compileErr))
+        return
+    end
+    local KeyStore = chunk()
+    if type(KeyStore) ~= "table" then
+        LocalPlayer:Kick("[ImmortalFarm] key_system.lua must return a table.")
         return
     end
 
-    -- Resolve provided key
-    local env = getfenv() or _G
-    local key = rawget(env, "script_key") or getgenv().script_key or read_saved_key()
+    -- Resolve provided key (supports saved key)
+    local env = (getfenv and getfenv()) or _G
+    local key = rawget(env, "script_key") or (getgenv and getgenv().script_key) or read_saved_key()
     if not key or #tostring(key) == 0 then
-        LocalPlayer:Kick("[ImmortalFarm] Missing key. Use:  script_key = \"YOUR-KEY\"  then run the loader again.")
+        LocalPlayer:Kick("[ImmortalFarm] Missing key. Use:  script_key = \"YOUR-KEY\"  then run again.")
         return
     end
-    key = tostring(key)
+    key = strim(key)
 
-    local function contains(tbl, v)
-        for _, x in ipairs(tbl or {}) do if x == v then return true end end
+    -- Validation helpers
+    local function arr_has(t, v)
+        t = t or {}
+        for i = 1, #t do
+            if t[i] == v then return true end
+        end
         return false
     end
+
     local function isDevKey(k)
-        for _, v in ipairs(KeyStore.DEV_KEYS or {}) do if v == k then return true end end
-        return false
+        return arr_has(KeyStore.DEV_KEYS, k)
     end
-    local function isWhitelistedUser(uid)
-        return contains(KeyStore.WHITELIST_USER_IDS, uid)
-    end
+
     local function validate(k, uid)
         if isDevKey(k) then return true, "Developer key accepted." end
-        if isWhitelistedUser(uid) then return true, "User whitelisted." end
+        if arr_has(KeyStore.WHITELIST_USER_IDS, uid) then return true, "User whitelisted." end
         local entry = (KeyStore.KEYS or {})[k]
         if not entry then return false, "Invalid key." end
         local users = entry.users or {}
         if #users == 0 then return true, "Universal key accepted." end
-        if contains(users, uid) then return true, "Bound key accepted." end
+        if arr_has(users, uid) then return true, "Bound key accepted." end
         return false, "Key not bound to this account."
     end
 
     local ok, reason = validate(key, userId)
     if not ok then
-        LocalPlayer:Kick("[ImmortalFarm] Access denied: " .. tostring(reason) .. "  Join Discord: https://discord.gg/qzE7xvkzAZ")
+        LocalPlayer:Kick("[ImmortalFarm] Access denied: " .. tostring(reason) .. "  | Discord: https://discord.gg/qzE7xvkzAZ")
         return
     end
 
